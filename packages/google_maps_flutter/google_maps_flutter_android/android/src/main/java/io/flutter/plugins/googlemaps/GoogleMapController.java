@@ -505,6 +505,7 @@ final class GoogleMapController
     methodChannel.invokeMethod("map#onLongPress", arguments);
   }
 
+  @Override
   public void onPoiClick(PointOfInterest poi) {
     final Map<String, Object> arguments = new HashMap<>(2);
     arguments.put("position", Convert.latLngToJson(poi.latLng));
