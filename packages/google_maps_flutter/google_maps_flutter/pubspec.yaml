@@ -21,19 +21,19 @@ dependencies:
     sdk: flutter
   google_maps_flutter_android: ^2.1.10      
     git:
-      url: https://github.com/minchemo/plugins.git
-      path: packages/google_maps_flutter/google_maps_flutter_android
+      url: https://github.com/minchemo/plugins
       ref: main
+      path: packages/google_maps_flutter/google_maps_flutter_android
   google_maps_flutter_ios: ^2.1.10
     git:
-      url: https://github.com/minchemo/plugins.git
-      path: packages/google_maps_flutter/google_maps_flutter_ios
+      url: https://github.com/minchemo/plugins
       ref: main
+      path: packages/google_maps_flutter/google_maps_flutter_ios
   google_maps_flutter_platform_interface: ^2.2.1
     git:
-      url: https://github.com/minchemo/plugins.git
-      path: packages/google_maps_flutter/google_maps_flutter_platform_interface
+      url: https://github.com/minchemo/plugins
       ref: main
+      path: packages/google_maps_flutter/google_maps_flutter_platform_interface
 
 dev_dependencies:
   flutter_test:
