@@ -569,8 +569,8 @@
          arguments:@{@"position" : [FLTGoogleMapJSONConversions arrayFromLocation:coordinate]}];
 }
 
-- (void)mapView:(GMSMapView *)mapView didTapPOIWithPlaceID:(NSString *)placeID name:(NSString *)name location:(CLLocationCoordinate2D)location {
-  [self._channel 
+- (void)mapView:(GMSMapView *)mapView didTapPOIWithPlaceID:(NSString *)placeID name:(NSString *)name location:(CLLocationCoordinate2D)coordinate {
+  [self.channel 
       invokeMethod:@"map#onPoiClick" 
         arguments:@{@"position" : [FLTGoogleMapJSONConversions arrayFromLocation:coordinate], @"name" : name, @"placeId" : placeID, }];
 }
