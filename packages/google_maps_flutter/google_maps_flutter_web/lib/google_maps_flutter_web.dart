@@ -26,6 +26,7 @@ import 'src/types.dart';
 part 'src/circle.dart';
 part 'src/circles.dart';
 part 'src/convert.dart';
+part 'src/point_of_interest.dart';
 part 'src/google_maps_controller.dart';
 part 'src/google_maps_flutter_web.dart';
 part 'src/marker.dart';

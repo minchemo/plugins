@@ -269,6 +269,11 @@ class TestGoogleMapsFlutterPlatform extends GoogleMapsFlutterPlatform {
   Stream<MapLongPressEvent> onLongPress({required int mapId}) {
     return mapEventStreamController.stream.whereType<MapLongPressEvent>();
   }
+  
+  @override
+  Stream<MapPoiClickEvent> onPoiClick({required int mapId}) {
+    return mapEventStreamController.stream.whereType<MapPoiClickEvent>();
+  }
 
   @override
   void dispose({required int mapId}) {
