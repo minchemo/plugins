@@ -1,12 +1,16 @@
 # Google Maps for Flutter
 
+<?code-excerpt path-base="example/lib"?>
+
 [![pub package](https://img.shields.io/pub/v/google_maps_flutter.svg)](https://pub.dev/packages/google_maps_flutter)
 
 A Flutter plugin that provides a [Google Maps](https://developers.google.com/maps/) widget.
 
-|             | Android | iOS    |
-|-------------|---------|--------|
-| **Support** | SDK 20+ | iOS 9+ |
+|             | Android | iOS     | Web                              |
+|-------------|---------|---------|----------------------------------|
+| **Support** | SDK 20+ | iOS 11+ | Same as [Flutter's][web-support] |
+
+[web-support]: https://docs.flutter.dev/reference/supported-platforms
 
 ## Usage
 
@@ -23,6 +27,7 @@ To use this plugin, add `google_maps_flutter` as a [dependency in your pubspec.y
   * Select "APIs" under the Google Maps menu.
   * To enable Google Maps for Android, select "Maps SDK for Android" in the "Additional APIs" section, then select "ENABLE".
   * To enable Google Maps for iOS, select "Maps SDK for iOS" in the "Additional APIs" section, then select "ENABLE".
+  * To enable Google Maps for Web, enable the "Maps JavaScript API".
   * Make sure the APIs you enabled are under the "Enabled APIs" section.
 
 For more details, see [Getting started with Google Maps Platform](https://developers.google.com/maps/gmp-get-started).
@@ -55,6 +60,11 @@ This means that app will only be available for users that run Android SDK 20 or 
 The Android implementation supports multiple
 [platform view display modes](https://flutter.dev/docs/development/platform-integration/platform-views).
 For details, see [the Android README](https://pub.dev/packages/google_maps_flutter_android#display-mode).
+
+#### Cloud-based map styling
+
+Cloud-based map styling works on Android only if `AndroidMapRenderer.latest` map renderer has been initialized.
+For details, see [the Android README](https://pub.dev/packages/google_maps_flutter_android#map-renderer).
 
 ### iOS
 
@@ -96,47 +106,46 @@ import GoogleMaps
 }
 ```
 
-### Both
+### Web
+
+You'll need to modify the `web/index.html` file of your Flutter Web application
+to include the Google Maps JS SDK.
+
+Check [the `google_maps_flutter_web` README](https://pub.dev/packages/google_maps_flutter_web)
+for the latest information on how to prepare your App to use Google Maps on the
+web.
+
+### All
 
 You can now add a `GoogleMap` widget to your widget tree.
 
 The map view can be controlled with the `GoogleMapController` that is passed to
 the `GoogleMap`'s `onMapCreated` callback.
 
+The `GoogleMap` widget should be used within a widget with a bounded size. Using it
+in an unbounded widget will cause the application to throw a Flutter exception.
+
 ### Sample Usage
 
+<?code-excerpt "readme_sample.dart (MapSample)"?>
 ```dart
-import 'dart:async';
-
-import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-
-void main() => runApp(MyApp());
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Google Maps Demo',
-      home: MapSample(),
-    );
-  }
-}
-
 class MapSample extends StatefulWidget {
+  const MapSample({super.key});
+
   @override
   State<MapSample> createState() => MapSampleState();
 }
 
 class MapSampleState extends State<MapSample> {
-  Completer<GoogleMapController> _controller = Completer();
+  final Completer<GoogleMapController> _controller =
+      Completer<GoogleMapController>();
 
-  static final CameraPosition _kGooglePlex = CameraPosition(
+  static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
     zoom: 14.4746,
   );
 
-  static final CameraPosition _kLake = CameraPosition(
+  static const CameraPosition _kLake = CameraPosition(
       bearing: 192.8334901395799,
       target: LatLng(37.43296265331129, -122.08832357078792),
       tilt: 59.440717697143555,
@@ -144,7 +153,7 @@ class MapSampleState extends State<MapSample> {
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
+    return Scaffold(
       body: GoogleMap(
         mapType: MapType.hybrid,
         initialCameraPosition: _kGooglePlex,
@@ -154,15 +163,15 @@ class MapSampleState extends State<MapSample> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _goToTheLake,
-        label: Text('To the lake!'),
-        icon: Icon(Icons.directions_boat),
+        label: const Text('To the lake!'),
+        icon: const Icon(Icons.directions_boat),
       ),
     );
   }
 
   Future<void> _goToTheLake() async {
     final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(CameraUpdate.newCameraPosition(_kLake));
+    await controller.animateCamera(CameraUpdate.newCameraPosition(_kLake));
   }
 }
 ```

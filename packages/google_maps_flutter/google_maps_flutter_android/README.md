@@ -1,6 +1,6 @@
 # google\_maps\_flutter\_android
 
-<?code-excerpt path-base="excerpts/packages/google_maps_flutter_example"?>
+<?code-excerpt path-base="example/lib"?>
 
 The Android implementation of [`google_maps_flutter`][1].
 
@@ -8,7 +8,10 @@ The Android implementation of [`google_maps_flutter`][1].
 
 This package is [endorsed][2], which means you can simply use
 `google_maps_flutter` normally. This package will be automatically included in
-your app when you do.
+your app when you do, so you do not need to add it to your `pubspec.yaml`.
+
+However, if you `import` this package to use any of its APIs directly, you
+should add it to your `pubspec.yaml` as usual.
 
 ## Display Mode
 
@@ -48,7 +51,30 @@ Hybrid Composition, but currently [misses certain map updates][4].
 This mode will likely become the default in future versions if/when the
 missed updates issue can be resolved.
 
+## Map renderer
+
+This plugin supports the option to request a specific [map renderer][5].
+
+The renderer must be requested before creating GoogleMap instances, as the renderer can be initialized only once per application context.
+
+<?code-excerpt "readme_excerpts.dart (MapRenderer)"?>
+```dart
+AndroidMapRenderer mapRenderer = AndroidMapRenderer.platformDefault;
+// ···
+  final GoogleMapsFlutterPlatform mapsImplementation =
+      GoogleMapsFlutterPlatform.instance;
+  if (mapsImplementation is GoogleMapsFlutterAndroid) {
+    WidgetsFlutterBinding.ensureInitialized();
+    mapRenderer = await mapsImplementation
+        .initializeWithRenderer(AndroidMapRenderer.latest);
+  }
+```
+
+Available values are `AndroidMapRenderer.latest`, `AndroidMapRenderer.legacy`, `AndroidMapRenderer.platformDefault`.
+Note that getting the requested renderer as a response is not guaranteed.
+
 [1]: https://pub.dev/packages/google_maps_flutter
 [2]: https://flutter.dev/docs/development/packages-and-plugins/developing-packages#endorsed-federated-plugin
 [3]: https://docs.flutter.dev/development/platform-integration/android/platform-views
 [4]: https://github.com/flutter/flutter/issues/103686
+[5]: https://developers.google.com/maps/documentation/android-sdk/renderer

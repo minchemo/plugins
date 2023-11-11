@@ -27,7 +27,6 @@ class GoogleMapController {
     CameraPosition initialCameraPosition,
     _GoogleMapState googleMapState,
   ) async {
-    assert(id != null);
     await GoogleMapsFlutterPlatform.instance.init(id);
     return GoogleMapController._(
       googleMapState,
@@ -102,7 +101,6 @@ class GoogleMapController {
   ///
   /// The returned [Future] completes after listeners have been notified.
   Future<void> _updateMarkers(MarkerUpdates markerUpdates) {
-    assert(markerUpdates != null);
     return GoogleMapsFlutterPlatform.instance
         .updateMarkers(markerUpdates, mapId: mapId);
   }
@@ -114,7 +112,6 @@ class GoogleMapController {
   ///
   /// The returned [Future] completes after listeners have been notified.
   Future<void> _updatePolygons(PolygonUpdates polygonUpdates) {
-    assert(polygonUpdates != null);
     return GoogleMapsFlutterPlatform.instance
         .updatePolygons(polygonUpdates, mapId: mapId);
   }
@@ -126,7 +123,6 @@ class GoogleMapController {
   ///
   /// The returned [Future] completes after listeners have been notified.
   Future<void> _updatePolylines(PolylineUpdates polylineUpdates) {
-    assert(polylineUpdates != null);
     return GoogleMapsFlutterPlatform.instance
         .updatePolylines(polylineUpdates, mapId: mapId);
   }
@@ -138,7 +134,6 @@ class GoogleMapController {
   ///
   /// The returned [Future] completes after listeners have been notified.
   Future<void> _updateCircles(CircleUpdates circleUpdates) {
-    assert(circleUpdates != null);
     return GoogleMapsFlutterPlatform.instance
         .updateCircles(circleUpdates, mapId: mapId);
   }
@@ -162,7 +157,6 @@ class GoogleMapController {
   /// in-memory cache of tiles. If you want to cache tiles for longer, you
   /// should implement an on-disk cache.
   Future<void> clearTileCache(TileOverlayId tileOverlayId) async {
-    assert(tileOverlayId != null);
     return GoogleMapsFlutterPlatform.instance
         .clearTileCache(tileOverlayId, mapId: mapId);
   }
@@ -236,7 +230,6 @@ class GoogleMapController {
   ///   * [hideMarkerInfoWindow] to hide the Info Window.
   ///   * [isMarkerInfoWindowShown] to check if the Info Window is showing.
   Future<void> showMarkerInfoWindow(MarkerId markerId) {
-    assert(markerId != null);
     return GoogleMapsFlutterPlatform.instance
         .showMarkerInfoWindow(markerId, mapId: mapId);
   }
@@ -250,7 +243,6 @@ class GoogleMapController {
   ///   * [showMarkerInfoWindow] to show the Info Window.
   ///   * [isMarkerInfoWindowShown] to check if the Info Window is showing.
   Future<void> hideMarkerInfoWindow(MarkerId markerId) {
-    assert(markerId != null);
     return GoogleMapsFlutterPlatform.instance
         .hideMarkerInfoWindow(markerId, mapId: mapId);
   }
@@ -264,7 +256,6 @@ class GoogleMapController {
   ///   * [showMarkerInfoWindow] to show the Info Window.
   ///   * [hideMarkerInfoWindow] to hide the Info Window.
   Future<bool> isMarkerInfoWindowShown(MarkerId markerId) {
-    assert(markerId != null);
     return GoogleMapsFlutterPlatform.instance
         .isMarkerInfoWindowShown(markerId, mapId: mapId);
   }

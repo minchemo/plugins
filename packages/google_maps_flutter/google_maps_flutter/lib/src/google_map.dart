@@ -89,10 +89,11 @@ class GoogleMap extends StatefulWidget {
   ///
   /// [AssertionError] will be thrown if [initialCameraPosition] is null;
   const GoogleMap({
-    Key? key,
+    super.key,
     required this.initialCameraPosition,
     this.onMapCreated,
     this.gestureRecognizers = const <Factory<OneSequenceGestureRecognizer>>{},
+    this.webGestureHandling,
     this.compassEnabled = true,
     this.mapToolbarEnabled = true,
     this.cameraTargetBounds = CameraTargetBounds.unbounded,
@@ -104,6 +105,7 @@ class GoogleMap extends StatefulWidget {
     this.zoomGesturesEnabled = true,
     this.liteModeEnabled = false,
     this.tiltGesturesEnabled = true,
+    this.fortyFiveDegreeImageryEnabled = false,
     this.myLocationEnabled = false,
     this.myLocationButtonEnabled = true,
     this.layoutDirection,
@@ -123,9 +125,8 @@ class GoogleMap extends StatefulWidget {
     this.onCameraIdle,
     this.onTap,
     this.onLongPress,
-    this.onPoiClick,
-  })  : assert(initialCameraPosition != null),
-        super(key: key);
+    this.cloudMapId,
+  });
 
   /// Callback method for when the map is ready to be used.
   ///
@@ -180,6 +181,9 @@ class GoogleMap extends StatefulWidget {
 
   /// True if the map view should respond to tilt gestures.
   final bool tiltGesturesEnabled;
+
+  /// True if 45 degree imagery should be enabled. Web only.
+  final bool fortyFiveDegreeImageryEnabled;
 
   /// Padding to be set on map. See https://developers.google.com/maps/documentation/android-sdk/map#map_padding for more details.
   final EdgeInsets padding;
@@ -287,6 +291,17 @@ class GoogleMap extends StatefulWidget {
   /// were not claimed by any other gesture recognizer.
   final Set<Factory<OneSequenceGestureRecognizer>> gestureRecognizers;
 
+  /// This setting controls how the API handles gestures on the map. Web only.
+  ///
+  /// See [WebGestureHandling] for more details.
+  final WebGestureHandling? webGestureHandling;
+
+  /// Identifier that's associated with a specific cloud-based map style.
+  ///
+  /// See https://developers.google.com/maps/documentation/get-map-id
+  /// for more details.
+  final String? cloudMapId;
+
   /// Creates a [State] for this [GoogleMap].
   @override
   State createState() => _GoogleMapState();
@@ -365,47 +380,41 @@ class _GoogleMapState extends State<GoogleMap> {
       return;
     }
     final GoogleMapController controller = await _controller.future;
-    // ignore: unawaited_futures
-    controller._updateMapConfiguration(updates);
+    unawaited(controller._updateMapConfiguration(updates));
     _mapConfiguration = newConfig;
   }
 
   Future<void> _updateMarkers() async {
     final GoogleMapController controller = await _controller.future;
-    // ignore: unawaited_futures
-    controller._updateMarkers(
-        MarkerUpdates.from(_markers.values.toSet(), widget.markers));
+    unawaited(controller._updateMarkers(
+        MarkerUpdates.from(_markers.values.toSet(), widget.markers)));
     _markers = keyByMarkerId(widget.markers);
   }
 
   Future<void> _updatePolygons() async {
     final GoogleMapController controller = await _controller.future;
-    // ignore: unawaited_futures
-    controller._updatePolygons(
-        PolygonUpdates.from(_polygons.values.toSet(), widget.polygons));
+    unawaited(controller._updatePolygons(
+        PolygonUpdates.from(_polygons.values.toSet(), widget.polygons)));
     _polygons = keyByPolygonId(widget.polygons);
   }
 
   Future<void> _updatePolylines() async {
     final GoogleMapController controller = await _controller.future;
-    // ignore: unawaited_futures
-    controller._updatePolylines(
-        PolylineUpdates.from(_polylines.values.toSet(), widget.polylines));
+    unawaited(controller._updatePolylines(
+        PolylineUpdates.from(_polylines.values.toSet(), widget.polylines)));
     _polylines = keyByPolylineId(widget.polylines);
   }
 
   Future<void> _updateCircles() async {
     final GoogleMapController controller = await _controller.future;
-    // ignore: unawaited_futures
-    controller._updateCircles(
-        CircleUpdates.from(_circles.values.toSet(), widget.circles));
+    unawaited(controller._updateCircles(
+        CircleUpdates.from(_circles.values.toSet(), widget.circles)));
     _circles = keyByCircleId(widget.circles);
   }
 
   Future<void> _updateTileOverlays() async {
     final GoogleMapController controller = await _controller.future;
-    // ignore: unawaited_futures
-    controller._updateTileOverlays(widget.tileOverlays);
+    unawaited(controller._updateTileOverlays(widget.tileOverlays));
   }
 
   Future<void> onPlatformViewCreated(int id) async {
@@ -415,7 +424,7 @@ class _GoogleMapState extends State<GoogleMap> {
       this,
     );
     _controller.complete(controller);
-    _updateTileOverlays();
+    unawaited(_updateTileOverlays());
     final MapCreatedCallback? onMapCreated = widget.onMapCreated;
     if (onMapCreated != null) {
       onMapCreated(controller);
@@ -423,7 +432,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onMarkerTap(MarkerId markerId) {
-    assert(markerId != null);
     final Marker? marker = _markers[markerId];
     if (marker == null) {
       throw UnknownMapObjectIdError('marker', markerId, 'onTap');
@@ -435,7 +443,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onMarkerDragStart(MarkerId markerId, LatLng position) {
-    assert(markerId != null);
     final Marker? marker = _markers[markerId];
     if (marker == null) {
       throw UnknownMapObjectIdError('marker', markerId, 'onDragStart');
@@ -447,7 +454,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onMarkerDrag(MarkerId markerId, LatLng position) {
-    assert(markerId != null);
     final Marker? marker = _markers[markerId];
     if (marker == null) {
       throw UnknownMapObjectIdError('marker', markerId, 'onDrag');
@@ -459,7 +465,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onMarkerDragEnd(MarkerId markerId, LatLng position) {
-    assert(markerId != null);
     final Marker? marker = _markers[markerId];
     if (marker == null) {
       throw UnknownMapObjectIdError('marker', markerId, 'onDragEnd');
@@ -471,7 +476,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onPolygonTap(PolygonId polygonId) {
-    assert(polygonId != null);
     final Polygon? polygon = _polygons[polygonId];
     if (polygon == null) {
       throw UnknownMapObjectIdError('polygon', polygonId, 'onTap');
@@ -483,7 +487,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onPolylineTap(PolylineId polylineId) {
-    assert(polylineId != null);
     final Polyline? polyline = _polylines[polylineId];
     if (polyline == null) {
       throw UnknownMapObjectIdError('polyline', polylineId, 'onTap');
@@ -495,7 +498,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onCircleTap(CircleId circleId) {
-    assert(circleId != null);
     final Circle? circle = _circles[circleId];
     if (circle == null) {
       throw UnknownMapObjectIdError('marker', circleId, 'onTap');
@@ -507,7 +509,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onInfoWindowTap(MarkerId markerId) {
-    assert(markerId != null);
     final Marker? marker = _markers[markerId];
     if (marker == null) {
       throw UnknownMapObjectIdError('marker', markerId, 'InfoWindow onTap');
@@ -519,7 +520,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onTap(LatLng position) {
-    assert(position != null);
     final ArgumentCallback<LatLng>? onTap = widget.onTap;
     if (onTap != null) {
       onTap(position);
@@ -527,7 +527,6 @@ class _GoogleMapState extends State<GoogleMap> {
   }
 
   void onLongPress(LatLng position) {
-    assert(position != null);
     final ArgumentCallback<LatLng>? onLongPress = widget.onLongPress;
     if (onLongPress != null) {
       onLongPress(position);
@@ -547,6 +546,7 @@ class _GoogleMapState extends State<GoogleMap> {
 MapConfiguration _configurationFromMapWidget(GoogleMap map) {
   assert(!map.liteModeEnabled || Platform.isAndroid);
   return MapConfiguration(
+    webGestureHandling: map.webGestureHandling,
     compassEnabled: map.compassEnabled,
     mapToolbarEnabled: map.mapToolbarEnabled,
     cameraTargetBounds: map.cameraTargetBounds,
@@ -555,6 +555,7 @@ MapConfiguration _configurationFromMapWidget(GoogleMap map) {
     rotateGesturesEnabled: map.rotateGesturesEnabled,
     scrollGesturesEnabled: map.scrollGesturesEnabled,
     tiltGesturesEnabled: map.tiltGesturesEnabled,
+    fortyFiveDegreeImageryEnabled: map.fortyFiveDegreeImageryEnabled,
     trackCameraPosition: map.onCameraMove != null,
     zoomControlsEnabled: map.zoomControlsEnabled,
     zoomGesturesEnabled: map.zoomGesturesEnabled,
@@ -565,5 +566,6 @@ MapConfiguration _configurationFromMapWidget(GoogleMap map) {
     indoorViewEnabled: map.indoorViewEnabled,
     trafficEnabled: map.trafficEnabled,
     buildingsEnabled: map.buildingsEnabled,
+    cloudMapId: map.cloudMapId,
   );
 }

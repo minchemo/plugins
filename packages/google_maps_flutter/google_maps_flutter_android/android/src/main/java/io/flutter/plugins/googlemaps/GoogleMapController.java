@@ -71,7 +71,7 @@ final class GoogleMapController
   private boolean trafficEnabled = false;
   private boolean buildingsEnabled = true;
   private boolean disposed = false;
-  private final float density;
+  @VisibleForTesting final float density;
   private MethodChannel.Result mapReadyResult;
   private final Context context;
   private final LifecycleProvider lifecycleProvider;
@@ -85,6 +85,7 @@ final class GoogleMapController
   private List<Object> initialPolylines;
   private List<Object> initialCircles;
   private List<Map<String, ?>> initialTileOverlays;
+  @VisibleForTesting List<Float> initialPadding;
 
   GoogleMapController(
       int id,
@@ -159,20 +160,17 @@ final class GoogleMapController
     }
     loadedCallbackPending = true;
     googleMap.setOnMapLoadedCallback(
-        new GoogleMap.OnMapLoadedCallback() {
-          @Override
-          public void onMapLoaded() {
-            loadedCallbackPending = false;
-            postFrameCallback(
-                () -> {
-                  postFrameCallback(
-                      () -> {
-                        if (mapView != null) {
-                          mapView.invalidate();
-                        }
-                      });
-                });
-          }
+        () -> {
+          loadedCallbackPending = false;
+          postFrameCallback(
+              () -> {
+                postFrameCallback(
+                    () -> {
+                      if (mapView != null) {
+                        mapView.invalidate();
+                      }
+                    });
+              });
         });
   }
 
@@ -210,6 +208,13 @@ final class GoogleMapController
     updateInitialPolylines();
     updateInitialCircles();
     updateInitialTileOverlays();
+    if (initialPadding != null && initialPadding.size() == 4) {
+      setPadding(
+          initialPadding.get(0),
+          initialPadding.get(1),
+          initialPadding.get(2),
+          initialPadding.get(3));
+    }
   }
 
   @Override
@@ -607,7 +612,6 @@ final class GoogleMapController
     googleMap.setOnCircleClickListener(listener);
     googleMap.setOnMapClickListener(listener);
     googleMap.setOnMapLongClickListener(listener);
-    googleMap.setOnPoiClickListener(listener);
   }
 
   // @Override
@@ -622,6 +626,7 @@ final class GoogleMapController
   // does. This will override it when available even with the annotation commented out.
   public void onInputConnectionUnlocked() {
     // TODO(mklim): Remove this empty override once https://github.com/flutter/flutter/issues/40126 is fixed in stable.
+    googleMap.setOnPoiClickListener(listener);
   }
 
   // DefaultLifecycleObserver
@@ -752,7 +757,22 @@ final class GoogleMapController
           (int) (top * density),
           (int) (right * density),
           (int) (bottom * density));
+    } else {
+      setInitialPadding(top, left, bottom, right);
     }
+  }
+
+  @VisibleForTesting
+  void setInitialPadding(float top, float left, float bottom, float right) {
+    if (initialPadding == null) {
+      initialPadding = new ArrayList<>();
+    } else {
+      initialPadding.clear();
+    }
+    initialPadding.add(top);
+    initialPadding.add(left);
+    initialPadding.add(bottom);
+    initialPadding.add(right);
   }
 
   @Override

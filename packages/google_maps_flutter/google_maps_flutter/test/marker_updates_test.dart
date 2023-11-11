@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 
-import 'fake_maps_controllers.dart';
+import 'fake_google_maps_flutter_platform.dart';
 
 Widget _mapWithMarkers(Set<Marker> markers) {
   return Directionality(
@@ -20,32 +20,24 @@ Widget _mapWithMarkers(Set<Marker> markers) {
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  final FakePlatformViewsController fakePlatformViewsController =
-      FakePlatformViewsController();
-
-  setUpAll(() {
-    SystemChannels.platform_views.setMockMethodCallHandler(
-        fakePlatformViewsController.fakePlatformViewsMethodHandler);
-  });
+  late FakeGoogleMapsFlutterPlatform platform;
 
   setUp(() {
-    fakePlatformViewsController.reset();
+    platform = FakeGoogleMapsFlutterPlatform();
+    GoogleMapsFlutterPlatform.instance = platform;
   });
 
   testWidgets('Initializing a marker', (WidgetTester tester) async {
     const Marker m1 = Marker(markerId: MarkerId('marker_1'));
     await tester.pumpWidget(_mapWithMarkers(<Marker>{m1}));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
-    expect(platformGoogleMap.markersToAdd.length, 1);
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
+    expect(map.markerUpdates.last.markersToAdd.length, 1);
 
-    final Marker initializedMarker = platformGoogleMap.markersToAdd.first;
+    final Marker initializedMarker = map.markerUpdates.last.markersToAdd.first;
     expect(initializedMarker, equals(m1));
-    expect(platformGoogleMap.markerIdsToRemove.isEmpty, true);
-    expect(platformGoogleMap.markersToChange.isEmpty, true);
+    expect(map.markerUpdates.last.markerIdsToRemove.isEmpty, true);
+    expect(map.markerUpdates.last.markersToChange.isEmpty, true);
   });
 
   testWidgets('Adding a marker', (WidgetTester tester) async {
@@ -55,16 +47,15 @@ void main() {
     await tester.pumpWidget(_mapWithMarkers(<Marker>{m1}));
     await tester.pumpWidget(_mapWithMarkers(<Marker>{m1, m2}));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
-    expect(platformGoogleMap.markersToAdd.length, 1);
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
+    expect(map.markerUpdates.last.markersToAdd.length, 1);
 
-    final Marker addedMarker = platformGoogleMap.markersToAdd.first;
+    final Marker addedMarker = map.markerUpdates.last.markersToAdd.first;
     expect(addedMarker, equals(m2));
 
-    expect(platformGoogleMap.markerIdsToRemove.isEmpty, true);
+    expect(map.markerUpdates.last.markerIdsToRemove.isEmpty, true);
 
-    expect(platformGoogleMap.markersToChange.isEmpty, true);
+    expect(map.markerUpdates.last.markersToChange.isEmpty, true);
   });
 
   testWidgets('Removing a marker', (WidgetTester tester) async {
@@ -73,13 +64,12 @@ void main() {
     await tester.pumpWidget(_mapWithMarkers(<Marker>{m1}));
     await tester.pumpWidget(_mapWithMarkers(<Marker>{}));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
-    expect(platformGoogleMap.markerIdsToRemove.length, 1);
-    expect(platformGoogleMap.markerIdsToRemove.first, equals(m1.markerId));
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
+    expect(map.markerUpdates.last.markerIdsToRemove.length, 1);
+    expect(map.markerUpdates.last.markerIdsToRemove.first, equals(m1.markerId));
 
-    expect(platformGoogleMap.markersToChange.isEmpty, true);
-    expect(platformGoogleMap.markersToAdd.isEmpty, true);
+    expect(map.markerUpdates.last.markersToChange.isEmpty, true);
+    expect(map.markerUpdates.last.markersToAdd.isEmpty, true);
   });
 
   testWidgets('Updating a marker', (WidgetTester tester) async {
@@ -89,13 +79,12 @@ void main() {
     await tester.pumpWidget(_mapWithMarkers(<Marker>{m1}));
     await tester.pumpWidget(_mapWithMarkers(<Marker>{m2}));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
-    expect(platformGoogleMap.markersToChange.length, 1);
-    expect(platformGoogleMap.markersToChange.first, equals(m2));
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
+    expect(map.markerUpdates.last.markersToChange.length, 1);
+    expect(map.markerUpdates.last.markersToChange.first, equals(m2));
 
-    expect(platformGoogleMap.markerIdsToRemove.isEmpty, true);
-    expect(platformGoogleMap.markersToAdd.isEmpty, true);
+    expect(map.markerUpdates.last.markerIdsToRemove.isEmpty, true);
+    expect(map.markerUpdates.last.markersToAdd.isEmpty, true);
   });
 
   testWidgets('Updating a marker', (WidgetTester tester) async {
@@ -108,11 +97,10 @@ void main() {
     await tester.pumpWidget(_mapWithMarkers(<Marker>{m1}));
     await tester.pumpWidget(_mapWithMarkers(<Marker>{m2}));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
-    expect(platformGoogleMap.markersToChange.length, 1);
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
+    expect(map.markerUpdates.last.markersToChange.length, 1);
 
-    final Marker update = platformGoogleMap.markersToChange.first;
+    final Marker update = map.markerUpdates.last.markersToChange.first;
     expect(update, equals(m2));
     expect(update.infoWindow.snippet, 'changed');
   });
@@ -128,12 +116,11 @@ void main() {
     await tester.pumpWidget(_mapWithMarkers(prev));
     await tester.pumpWidget(_mapWithMarkers(cur));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
 
-    expect(platformGoogleMap.markersToChange, cur);
-    expect(platformGoogleMap.markerIdsToRemove.isEmpty, true);
-    expect(platformGoogleMap.markersToAdd.isEmpty, true);
+    expect(map.markerUpdates.last.markersToChange, cur);
+    expect(map.markerUpdates.last.markerIdsToRemove.isEmpty, true);
+    expect(map.markerUpdates.last.markersToAdd.isEmpty, true);
   });
 
   testWidgets('Multi Update', (WidgetTester tester) async {
@@ -149,16 +136,15 @@ void main() {
     await tester.pumpWidget(_mapWithMarkers(prev));
     await tester.pumpWidget(_mapWithMarkers(cur));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
 
-    expect(platformGoogleMap.markersToChange.length, 1);
-    expect(platformGoogleMap.markersToAdd.length, 1);
-    expect(platformGoogleMap.markerIdsToRemove.length, 1);
+    expect(map.markerUpdates.last.markersToChange.length, 1);
+    expect(map.markerUpdates.last.markersToAdd.length, 1);
+    expect(map.markerUpdates.last.markerIdsToRemove.length, 1);
 
-    expect(platformGoogleMap.markersToChange.first, equals(m2));
-    expect(platformGoogleMap.markersToAdd.first, equals(m1));
-    expect(platformGoogleMap.markerIdsToRemove.first, equals(m3.markerId));
+    expect(map.markerUpdates.last.markersToChange.first, equals(m2));
+    expect(map.markerUpdates.last.markersToAdd.first, equals(m1));
+    expect(map.markerUpdates.last.markerIdsToRemove.first, equals(m3.markerId));
   });
 
   testWidgets('Partial Update', (WidgetTester tester) async {
@@ -172,12 +158,11 @@ void main() {
     await tester.pumpWidget(_mapWithMarkers(prev));
     await tester.pumpWidget(_mapWithMarkers(cur));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
 
-    expect(platformGoogleMap.markersToChange, <Marker>{m3});
-    expect(platformGoogleMap.markerIdsToRemove.isEmpty, true);
-    expect(platformGoogleMap.markersToAdd.isEmpty, true);
+    expect(map.markerUpdates.last.markersToChange, <Marker>{m3});
+    expect(map.markerUpdates.last.markerIdsToRemove.isEmpty, true);
+    expect(map.markerUpdates.last.markersToAdd.isEmpty, true);
   });
 
   testWidgets('Update non platform related attr', (WidgetTester tester) async {
@@ -185,18 +170,50 @@ void main() {
     final Set<Marker> prev = <Marker>{m1};
     m1 = Marker(
         markerId: const MarkerId('marker_1'),
-        onTap: () => print('hello'),
-        onDragEnd: (LatLng latLng) => print(latLng));
+        onTap: () {},
+        onDragEnd: (LatLng latLng) {});
     final Set<Marker> cur = <Marker>{m1};
 
     await tester.pumpWidget(_mapWithMarkers(prev));
     await tester.pumpWidget(_mapWithMarkers(cur));
 
-    final FakePlatformGoogleMap platformGoogleMap =
-        fakePlatformViewsController.lastCreatedView!;
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
 
-    expect(platformGoogleMap.markersToChange.isEmpty, true);
-    expect(platformGoogleMap.markerIdsToRemove.isEmpty, true);
-    expect(platformGoogleMap.markersToAdd.isEmpty, true);
+    expect(map.markerUpdates.last.markersToChange.isEmpty, true);
+    expect(map.markerUpdates.last.markerIdsToRemove.isEmpty, true);
+    expect(map.markerUpdates.last.markersToAdd.isEmpty, true);
+  });
+
+  testWidgets('multi-update with delays', (WidgetTester tester) async {
+    platform.simulatePlatformDelay = true;
+
+    const Marker m1 = Marker(markerId: MarkerId('marker_1'));
+    const Marker m2 = Marker(markerId: MarkerId('marker_2'));
+    const Marker m3 = Marker(markerId: MarkerId('marker_3'));
+    const Marker m3updated =
+        Marker(markerId: MarkerId('marker_3'), draggable: true);
+
+    // First remove one and add another, then update the new one.
+    await tester.pumpWidget(_mapWithMarkers(<Marker>{m1, m2}));
+    await tester.pumpWidget(_mapWithMarkers(<Marker>{m1, m3}));
+    await tester.pumpWidget(_mapWithMarkers(<Marker>{m1, m3updated}));
+
+    final PlatformMapStateRecorder map = platform.lastCreatedMap;
+
+    expect(map.markerUpdates.length, 3);
+
+    expect(map.markerUpdates[0].markersToChange.isEmpty, true);
+    expect(map.markerUpdates[0].markersToAdd, <Marker>{m1, m2});
+    expect(map.markerUpdates[0].markerIdsToRemove.isEmpty, true);
+
+    expect(map.markerUpdates[1].markersToChange.isEmpty, true);
+    expect(map.markerUpdates[1].markersToAdd, <Marker>{m3});
+    expect(map.markerUpdates[1].markerIdsToRemove, <MarkerId>{m2.markerId});
+
+    expect(map.markerUpdates[2].markersToChange, <Marker>{m3updated});
+    expect(map.markerUpdates[2].markersToAdd.isEmpty, true);
+    expect(map.markerUpdates[2].markerIdsToRemove.isEmpty, true);
+
+    await tester.pumpAndSettle();
   });
 }

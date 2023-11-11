@@ -3,9 +3,6 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-// TODO(a14n): remove this import once Flutter 3.1 or later reaches stable (including flutter/flutter#104231)
-// ignore: unnecessary_import
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -177,90 +174,102 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
         _mapEventStreamController.add(CameraMoveStartedEvent(mapId));
         break;
       case 'camera#onMove':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(CameraMoveEvent(
           mapId,
-          CameraPosition.fromMap(call.arguments['position'])!,
+          CameraPosition.fromMap(arguments['position'])!,
         ));
         break;
       case 'camera#onIdle':
         _mapEventStreamController.add(CameraIdleEvent(mapId));
         break;
       case 'marker#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerTapEvent(
           mapId,
-          MarkerId(call.arguments['markerId'] as String),
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'marker#onDragStart':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragStartEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
-          MarkerId(call.arguments['markerId'] as String),
+          LatLng.fromJson(arguments['position'])!,
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'marker#onDrag':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
-          MarkerId(call.arguments['markerId'] as String),
+          LatLng.fromJson(arguments['position'])!,
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'marker#onDragEnd':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragEndEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
-          MarkerId(call.arguments['markerId'] as String),
+          LatLng.fromJson(arguments['position'])!,
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'infoWindow#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(InfoWindowTapEvent(
           mapId,
-          MarkerId(call.arguments['markerId'] as String),
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'polyline#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(PolylineTapEvent(
           mapId,
-          PolylineId(call.arguments['polylineId'] as String),
+          PolylineId(arguments['polylineId']! as String),
         ));
         break;
       case 'polygon#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(PolygonTapEvent(
           mapId,
-          PolygonId(call.arguments['polygonId'] as String),
+          PolygonId(arguments['polygonId']! as String),
         ));
         break;
       case 'circle#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(CircleTapEvent(
           mapId,
-          CircleId(call.arguments['circleId'] as String),
+          CircleId(arguments['circleId']! as String),
         ));
         break;
       case 'map#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapTapEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
+          LatLng.fromJson(arguments['position'])!,
         ));
         break;
       case 'map#onLongPress':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapLongPressEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
-        ));
-        break;
-      case 'map#onPoiClick':
-        _mapEventStreamController.add(MapPoiClickEvent(
-          mapId,
-          PointOfInterest(
-            LatLng.fromJson(call.arguments['position'])!,
-            call.arguments['name'],
-            call.arguments['placeId'],),
+          LatLng.fromJson(arguments['position'])!,
         ));
         break;
       case 'tileOverlay#getTile':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
             _tileOverlays[mapId];
-        final String tileOverlayId = call.arguments['tileOverlayId'] as String;
+        final String tileOverlayId = arguments['tileOverlayId']! as String;
+        break;
+        ));
+            call.arguments['placeId'],),
+            call.arguments['name'],
+            LatLng.fromJson(call.arguments['position'])!,
+          PointOfInterest(
+          mapId,
+        _mapEventStreamController.add(MapPoiClickEvent(
+      case 'map#onPoiClick':
         final TileOverlay? tileOverlay =
             tileOverlaysForThisMap?[TileOverlayId(tileOverlayId)];
         final TileProvider? tileProvider = tileOverlay?.tileProvider;
@@ -268,9 +277,9 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
           return TileProvider.noTile.toJson();
         }
         final Tile tile = await tileProvider.getTile(
-          call.arguments['x'] as int,
-          call.arguments['y'] as int,
-          call.arguments['zoom'] as int?,
+          arguments['x']! as int,
+          arguments['y']! as int,
+          arguments['zoom'] as int?,
         );
         return tile.toJson();
       default:
@@ -278,12 +287,19 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     }
   }
 
+  /// Returns the arguments of [call] as typed string-keyed Map.
+  ///
+  /// This does not do any type validation, so is only safe to call if the
+  /// arguments are known to be a map.
+  Map<String, Object?> _getArgumentDictionary(MethodCall call) {
+    return (call.arguments as Map<Object?, Object?>).cast<String, Object?>();
+  }
+
   @override
   Future<void> updateMapOptions(
     Map<String, dynamic> optionsUpdate, {
     required int mapId,
   }) {
-    assert(optionsUpdate != null);
     return _channel(mapId).invokeMethod<void>(
       'map#update',
       <String, dynamic>{
@@ -297,7 +313,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     MarkerUpdates markerUpdates, {
     required int mapId,
   }) {
-    assert(markerUpdates != null);
     return _channel(mapId).invokeMethod<void>(
       'markers#update',
       markerUpdates.toJson(),
@@ -309,7 +324,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     PolygonUpdates polygonUpdates, {
     required int mapId,
   }) {
-    assert(polygonUpdates != null);
     return _channel(mapId).invokeMethod<void>(
       'polygons#update',
       polygonUpdates.toJson(),
@@ -321,7 +335,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     PolylineUpdates polylineUpdates, {
     required int mapId,
   }) {
-    assert(polylineUpdates != null);
     return _channel(mapId).invokeMethod<void>(
       'polylines#update',
       polylineUpdates.toJson(),
@@ -333,7 +346,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     CircleUpdates circleUpdates, {
     required int mapId,
   }) {
-    assert(circleUpdates != null);
     return _channel(mapId).invokeMethod<void>(
       'circles#update',
       circleUpdates.toJson(),
@@ -444,7 +456,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     MarkerId markerId, {
     required int mapId,
   }) {
-    assert(markerId != null);
     return _channel(mapId).invokeMethod<void>(
         'markers#showInfoWindow', <String, String>{'markerId': markerId.value});
   }
@@ -454,7 +465,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     MarkerId markerId, {
     required int mapId,
   }) {
-    assert(markerId != null);
     return _channel(mapId).invokeMethod<void>(
         'markers#hideInfoWindow', <String, String>{'markerId': markerId.value});
   }
@@ -464,7 +474,6 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
     MarkerId markerId, {
     required int mapId,
   }) async {
-    assert(markerId != null);
     return (await _channel(mapId).invokeMethod<bool>(
         'markers#isInfoWindowShown',
         <String, String>{'markerId': markerId.value}))!;
@@ -635,6 +644,7 @@ Map<String, Object> _jsonForMapConfiguration(MapConfiguration config) {
     if (config.trafficEnabled != null) 'trafficEnabled': config.trafficEnabled!,
     if (config.buildingsEnabled != null)
       'buildingsEnabled': config.buildingsEnabled!,
+    if (config.cloudMapId != null) 'cloudMapId': config.cloudMapId!,
   };
 }
 
@@ -643,8 +653,8 @@ Map<String, Object> _jsonForMapConfiguration(MapConfiguration config) {
 // interface, and remove this copy.
 class _TileOverlayUpdates extends MapsObjectUpdates<TileOverlay> {
   /// Computes [TileOverlayUpdates] given previous and current [TileOverlay]s.
-  _TileOverlayUpdates.from(Set<TileOverlay> previous, Set<TileOverlay> current)
-      : super.from(previous, current, objectName: 'tileOverlay');
+  _TileOverlayUpdates.from(super.previous, super.current)
+      : super.from(objectName: 'tileOverlay');
 
   /// Set of TileOverlays to be added in this update.
   Set<TileOverlay> get tileOverlaysToAdd => objectsToAdd;

@@ -4,12 +4,11 @@
 
 import 'package:args/command_runner.dart';
 import 'package:file/file.dart';
-import 'package:git/git.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
-import 'common/core.dart';
 import 'common/git_version_finder.dart';
+import 'common/output_utils.dart';
 import 'common/package_looping_command.dart';
 import 'common/package_state_utils.dart';
 import 'common/repository_package.dart';
@@ -36,9 +35,9 @@ enum _ChangelogUpdateState {
 class UpdateReleaseInfoCommand extends PackageLoopingCommand {
   /// Creates a publish metadata updater command instance.
   UpdateReleaseInfoCommand(
-    Directory packagesDir, {
-    GitDir? gitDir,
-  }) : super(packagesDir, gitDir: gitDir) {
+    super.packagesDir, {
+    super.gitDir,
+  }) {
     argParser.addOption(_changelogFlag,
         mandatory: true,
         help: 'The changelog entry to add. '
@@ -107,6 +106,10 @@ class UpdateReleaseInfoCommand extends PackageLoopingCommand {
         break;
       case _versionMinimal:
         final GitVersionFinder gitVersionFinder = await retrieveVersionFinder();
+        // If the line below fails with "Not a valid object name FETCH_HEAD"
+        // run "git fetch", FETCH_HEAD is a temporary reference that only exists
+        // after a fetch. This can happen when a branch is made locally and
+        // pushed but never fetched.
         _changedFiles = await gitVersionFinder.getChangedFiles();
         // Anothing other than a fixed change is null.
         _versionChange = null;
@@ -139,6 +142,9 @@ class UpdateReleaseInfoCommand extends PackageLoopingCommand {
 
       if (!state.hasChanges) {
         return PackageResult.skip('No changes to package');
+      }
+      if (!state.needsVersionChange && !state.needsChangelogChange) {
+        return PackageResult.skip('No non-exempt changes to package');
       }
       if (state.needsVersionChange) {
         versionChange = _VersionIncrementType.bugfix;

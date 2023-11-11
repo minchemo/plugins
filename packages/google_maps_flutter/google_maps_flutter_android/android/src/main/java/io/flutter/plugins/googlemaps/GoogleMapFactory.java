@@ -5,6 +5,8 @@
 package io.flutter.plugins.googlemaps;
 
 import android.content.Context;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.google.android.gms.maps.model.CameraPosition;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.StandardMessageCodec;
@@ -17,20 +19,26 @@ public class GoogleMapFactory extends PlatformViewFactory {
 
   private final BinaryMessenger binaryMessenger;
   private final LifecycleProvider lifecycleProvider;
+  private final GoogleMapInitializer googleMapInitializer;
 
-  GoogleMapFactory(BinaryMessenger binaryMessenger, LifecycleProvider lifecycleProvider) {
+  GoogleMapFactory(
+      BinaryMessenger binaryMessenger, Context context, LifecycleProvider lifecycleProvider) {
     super(StandardMessageCodec.INSTANCE);
+
     this.binaryMessenger = binaryMessenger;
     this.lifecycleProvider = lifecycleProvider;
+    this.googleMapInitializer = new GoogleMapInitializer(context, binaryMessenger);
   }
 
   @SuppressWarnings("unchecked")
   @Override
-  public PlatformView create(Context context, int id, Object args) {
+  @NonNull
+  public PlatformView create(@NonNull Context context, int id, @Nullable Object args) {
     Map<String, Object> params = (Map<String, Object>) args;
     final GoogleMapBuilder builder = new GoogleMapBuilder();
 
-    Convert.interpretGoogleMapOptions(params.get("options"), builder);
+    final Object options = params.get("options");
+    Convert.interpretGoogleMapOptions(options, builder);
     if (params.containsKey("initialCameraPosition")) {
       CameraPosition position = Convert.toCameraPosition(params.get("initialCameraPosition"));
       builder.setInitialCameraPosition(position);
@@ -50,6 +58,11 @@ public class GoogleMapFactory extends PlatformViewFactory {
     if (params.containsKey("tileOverlaysToAdd")) {
       builder.setInitialTileOverlays((List<Map<String, ?>>) params.get("tileOverlaysToAdd"));
     }
+    final Object cloudMapId = ((Map<?, ?>) options).get("cloudMapId");
+    if (cloudMapId != null) {
+      builder.setMapId((String) cloudMapId);
+    }
+
     return builder.build(id, context, binaryMessenger, lifecycleProvider);
   }
 }

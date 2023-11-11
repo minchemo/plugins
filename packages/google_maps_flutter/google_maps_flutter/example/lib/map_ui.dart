@@ -26,7 +26,7 @@ class MapUiPage extends GoogleMapExampleAppPage {
 }
 
 class MapUiBody extends StatefulWidget {
-  const MapUiBody({Key? key}) : super(key: key);
+  const MapUiBody({super.key});
 
   @override
   State<StatefulWidget> createState() => MapUiBodyState();
@@ -240,7 +240,7 @@ class MapUiBodyState extends State<MapUiBody> {
   }
 
   Future<String> _getFileData(String path) async {
-    return await rootBundle.loadString(path);
+    return rootBundle.loadString(path);
   }
 
   void _setMapStyle(String mapStyle) {

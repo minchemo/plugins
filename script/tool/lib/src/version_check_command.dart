@@ -3,18 +3,15 @@
 // found in the LICENSE file.
 
 import 'package:file/file.dart';
-import 'package:git/git.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
-import 'package:platform/platform.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import 'common/core.dart';
 import 'common/git_version_finder.dart';
+import 'common/output_utils.dart';
 import 'common/package_looping_command.dart';
 import 'common/package_state_utils.dart';
-import 'common/process_runner.dart';
 import 'common/pub_version_finder.dart';
 import 'common/repository_package.dart';
 
@@ -46,6 +43,9 @@ enum _CurrentVersionState {
 
   /// The version has changed, and the transition is invalid.
   invalidChange,
+
+  /// The package is new.
+  newPackage,
 
   /// There was an error determining the version state.
   unknown,
@@ -95,19 +95,13 @@ Map<Version, NextVersionType> getAllowedNextVersions(
 class VersionCheckCommand extends PackageLoopingCommand {
   /// Creates an instance of the version check command.
   VersionCheckCommand(
-    Directory packagesDir, {
-    ProcessRunner processRunner = const ProcessRunner(),
-    Platform platform = const LocalPlatform(),
-    GitDir? gitDir,
+    super.packagesDir, {
+    super.processRunner,
+    super.platform,
+    super.gitDir,
     http.Client? httpClient,
-  })  : _pubVersionFinder =
-            PubVersionFinder(httpClient: httpClient ?? http.Client()),
-        super(
-          packagesDir,
-          processRunner: processRunner,
-          platform: platform,
-          gitDir: gitDir,
-        ) {
+  }) : _pubVersionFinder =
+            PubVersionFinder(httpClient: httpClient ?? http.Client()) {
     argParser.addFlag(
       _againstPubFlag,
       help: 'Whether the version check should run against the version on pub.\n'
@@ -169,6 +163,9 @@ class VersionCheckCommand extends PackageLoopingCommand {
   final String name = 'version-check';
 
   @override
+  List<String> get aliases => <String>['check-version'];
+
+  @override
   final String description =
       'Checks if the versions of packages have been incremented per pub specification.\n'
       'Also checks if the latest version in CHANGELOG matches the version in pubspec.\n\n'
@@ -216,6 +213,7 @@ class VersionCheckCommand extends PackageLoopingCommand {
         break;
       case _CurrentVersionState.validIncrease:
       case _CurrentVersionState.validRevert:
+      case _CurrentVersionState.newPackage:
         versionChanged = true;
         break;
       case _CurrentVersionState.invalidChange:
@@ -285,8 +283,7 @@ ${indentation}HTTP response: ${pubVersionFinderResponse.httpResponse.body}
     final String gitPath = path.style == p.Style.windows
         ? p.posix.joinAll(path.split(relativePath))
         : relativePath;
-    return await _gitVersionFinder.getPackageVersion(gitPath,
-        gitRef: _mergeBase);
+    return _gitVersionFinder.getPackageVersion(gitPath, gitRef: _mergeBase);
   }
 
   /// Returns the state of the verison of [package] relative to the comparison
@@ -319,7 +316,7 @@ ${indentation}HTTP response: ${pubVersionFinderResponse.httpResponse.body}
           '${getBoolArg(_againstPubFlag) ? 'on pub server' : 'at git base'}.');
       logWarning(
           '${indentation}If this package is not new, something has gone wrong.');
-      return _CurrentVersionState.validIncrease; // Assume new, thus valid.
+      return _CurrentVersionState.newPackage;
     }
 
     if (previousVersion == currentVersion) {

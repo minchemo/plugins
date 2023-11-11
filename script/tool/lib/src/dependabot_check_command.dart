@@ -2,21 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
-
 import 'package:file/file.dart';
-import 'package:git/git.dart';
 import 'package:yaml/yaml.dart';
 
-import 'common/core.dart';
+import 'common/output_utils.dart';
 import 'common/package_looping_command.dart';
 import 'common/repository_package.dart';
 
 /// A command to verify Dependabot configuration coverage of packages.
 class DependabotCheckCommand extends PackageLoopingCommand {
   /// Creates Dependabot check command instance.
-  DependabotCheckCommand(Directory packagesDir, {GitDir? gitDir})
-      : super(packagesDir, gitDir: gitDir) {
+  DependabotCheckCommand(super.packagesDir, {super.gitDir}) {
     argParser.addOption(_configPathFlag,
         help: 'Path to the Dependabot configuration file',
         defaultsTo: '.github/dependabot.yml');
@@ -31,6 +27,9 @@ class DependabotCheckCommand extends PackageLoopingCommand {
 
   @override
   final String name = 'dependabot-check';
+
+  @override
+  List<String> get aliases => <String>['check-dependabot'];
 
   @override
   final String description =
@@ -58,8 +57,9 @@ class DependabotCheckCommand extends PackageLoopingCommand {
     const String typeKey = 'package-ecosystem';
     const String dirKey = 'directory';
     _gradleDirs = entries
-        .where((dynamic entry) => entry[typeKey] == 'gradle')
-        .map((dynamic entry) => (entry as YamlMap)[dirKey] as String)
+        .cast<YamlMap>()
+        .where((YamlMap entry) => entry[typeKey] == 'gradle')
+        .map((YamlMap entry) => entry[dirKey] as String)
         .toSet();
   }
 

@@ -3,9 +3,6 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-// TODO(a14n): remove this import once Flutter 3.1 or later reaches stable (including flutter/flutter#104231)
-// ignore: unnecessary_import
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -41,12 +38,29 @@ class UnknownMapIDError extends Error {
   }
 }
 
+/// The possible android map renderer types that can be
+/// requested from the native Google Maps SDK.
+enum AndroidMapRenderer {
+  /// Latest renderer type.
+  latest,
+
+  /// Legacy renderer type.
+  legacy,
+
+  /// Requests the default map renderer type.
+  platformDefault,
+}
+
 /// An implementation of [GoogleMapsFlutterPlatform] for Android.
 class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   /// Registers the Android implementation of GoogleMapsFlutterPlatform.
   static void registerWith() {
     GoogleMapsFlutterPlatform.instance = GoogleMapsFlutterAndroid();
   }
+
+  /// The method channel used to initialize the native Google Maps SDK.
+  final MethodChannel _initializerChannel = const MethodChannel(
+      'plugins.flutter.dev/google_maps_android_initializer');
 
   // Keep a collection of id -> channel
   // Every method call passes the int mapId
@@ -178,90 +192,102 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
         _mapEventStreamController.add(CameraMoveStartedEvent(mapId));
         break;
       case 'camera#onMove':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(CameraMoveEvent(
           mapId,
-          CameraPosition.fromMap(call.arguments['position'])!,
+          CameraPosition.fromMap(arguments['position'])!,
         ));
         break;
       case 'camera#onIdle':
         _mapEventStreamController.add(CameraIdleEvent(mapId));
         break;
       case 'marker#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerTapEvent(
           mapId,
-          MarkerId(call.arguments['markerId'] as String),
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'marker#onDragStart':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragStartEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
-          MarkerId(call.arguments['markerId'] as String),
+          LatLng.fromJson(arguments['position'])!,
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'marker#onDrag':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
-          MarkerId(call.arguments['markerId'] as String),
+          LatLng.fromJson(arguments['position'])!,
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'marker#onDragEnd':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MarkerDragEndEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
-          MarkerId(call.arguments['markerId'] as String),
+          LatLng.fromJson(arguments['position'])!,
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'infoWindow#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(InfoWindowTapEvent(
           mapId,
-          MarkerId(call.arguments['markerId'] as String),
+          MarkerId(arguments['markerId']! as String),
         ));
         break;
       case 'polyline#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(PolylineTapEvent(
           mapId,
-          PolylineId(call.arguments['polylineId'] as String),
+          PolylineId(arguments['polylineId']! as String),
         ));
         break;
       case 'polygon#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(PolygonTapEvent(
           mapId,
-          PolygonId(call.arguments['polygonId'] as String),
+          PolygonId(arguments['polygonId']! as String),
         ));
         break;
       case 'circle#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(CircleTapEvent(
           mapId,
-          CircleId(call.arguments['circleId'] as String),
+          CircleId(arguments['circleId']! as String),
         ));
         break;
       case 'map#onTap':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapTapEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
+          LatLng.fromJson(arguments['position'])!,
         ));
         break;
       case 'map#onLongPress':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
         _mapEventStreamController.add(MapLongPressEvent(
           mapId,
-          LatLng.fromJson(call.arguments['position'])!,
+          LatLng.fromJson(arguments['position'])!,
         ));
         break;
+      case 'tileOverlay#getTile':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
+        final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
+            _tileOverlays[mapId];
+        final String tileOverlayId = arguments['tileOverlayId']! as String;
       case 'map#onPoiClick':
         _mapEventStreamController.add(MapPoiClickEvent(
-          mapId,
           PointOfInterest(
+          mapId,
             LatLng.fromJson(call.arguments['position'])!,
             call.arguments['name'],
             call.arguments['placeId'],),
         ));
         break;
-      case 'tileOverlay#getTile':
-        final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
-            _tileOverlays[mapId];
-        final String tileOverlayId = call.arguments['tileOverlayId'] as String;
         final TileOverlay? tileOverlay =
             tileOverlaysForThisMap?[TileOverlayId(tileOverlayId)];
         final TileProvider? tileProvider = tileOverlay?.tileProvider;
@@ -269,9 +295,9 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
           return TileProvider.noTile.toJson();
         }
         final Tile tile = await tileProvider.getTile(
-          call.arguments['x'] as int,
-          call.arguments['y'] as int,
-          call.arguments['zoom'] as int?,
+          arguments['x']! as int,
+          arguments['y']! as int,
+          arguments['zoom'] as int?,
         );
         return tile.toJson();
       default:
@@ -279,12 +305,19 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     }
   }
 
+  /// Returns the arguments of [call] as typed string-keyed Map.
+  ///
+  /// This does not do any type validation, so is only safe to call if the
+  /// arguments are known to be a map.
+  Map<String, Object?> _getArgumentDictionary(MethodCall call) {
+    return (call.arguments as Map<Object?, Object?>).cast<String, Object?>();
+  }
+
   @override
   Future<void> updateMapOptions(
     Map<String, dynamic> optionsUpdate, {
     required int mapId,
   }) {
-    assert(optionsUpdate != null);
     return _channel(mapId).invokeMethod<void>(
       'map#update',
       <String, dynamic>{
@@ -298,7 +331,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     MarkerUpdates markerUpdates, {
     required int mapId,
   }) {
-    assert(markerUpdates != null);
     return _channel(mapId).invokeMethod<void>(
       'markers#update',
       markerUpdates.toJson(),
@@ -310,7 +342,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     PolygonUpdates polygonUpdates, {
     required int mapId,
   }) {
-    assert(polygonUpdates != null);
     return _channel(mapId).invokeMethod<void>(
       'polygons#update',
       polygonUpdates.toJson(),
@@ -322,7 +353,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     PolylineUpdates polylineUpdates, {
     required int mapId,
   }) {
-    assert(polylineUpdates != null);
     return _channel(mapId).invokeMethod<void>(
       'polylines#update',
       polylineUpdates.toJson(),
@@ -334,7 +364,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     CircleUpdates circleUpdates, {
     required int mapId,
   }) {
-    assert(circleUpdates != null);
     return _channel(mapId).invokeMethod<void>(
       'circles#update',
       circleUpdates.toJson(),
@@ -445,7 +474,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     MarkerId markerId, {
     required int mapId,
   }) {
-    assert(markerId != null);
     return _channel(mapId).invokeMethod<void>(
         'markers#showInfoWindow', <String, String>{'markerId': markerId.value});
   }
@@ -455,7 +483,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     MarkerId markerId, {
     required int mapId,
   }) {
-    assert(markerId != null);
     return _channel(mapId).invokeMethod<void>(
         'markers#hideInfoWindow', <String, String>{'markerId': markerId.value});
   }
@@ -465,7 +492,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     MarkerId markerId, {
     required int mapId,
   }) async {
-    assert(markerId != null);
     return (await _channel(mapId).invokeMethod<bool>(
         'markers#isInfoWindowShown',
         <String, String>{'markerId': markerId.value}))!;
@@ -493,6 +519,52 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   ///
   /// Currently defaults to true, but the default is subject to change.
   bool useAndroidViewSurface = true;
+
+  /// Requests Google Map Renderer with [AndroidMapRenderer] type.
+  ///
+  /// See https://pub.dev/packages/google_maps_flutter_android#map-renderer
+  /// for more information.
+  ///
+  /// The renderer must be requested before creating GoogleMap instances as the
+  /// renderer can be initialized only once per application context.
+  /// Throws a [PlatformException] if method is called multiple times.
+  ///
+  /// The returned [Future] completes after renderer has been initialized.
+  /// Initialized [AndroidMapRenderer] type is returned.
+  Future<AndroidMapRenderer> initializeWithRenderer(
+      AndroidMapRenderer? rendererType) async {
+    String preferredRenderer;
+    switch (rendererType) {
+      case AndroidMapRenderer.latest:
+        preferredRenderer = 'latest';
+        break;
+      case AndroidMapRenderer.legacy:
+        preferredRenderer = 'legacy';
+        break;
+      case AndroidMapRenderer.platformDefault:
+      case null:
+        preferredRenderer = 'default';
+    }
+
+    final String? initializedRenderer = await _initializerChannel
+        .invokeMethod<String>('initializer#preferRenderer',
+            <String, dynamic>{'value': preferredRenderer});
+
+    if (initializedRenderer == null) {
+      throw AndroidMapRendererException('Failed to initialize map renderer.');
+    }
+
+    // Returns mapped [AndroidMapRenderer] enum type.
+    switch (initializedRenderer) {
+      case 'latest':
+        return AndroidMapRenderer.latest;
+      case 'legacy':
+        return AndroidMapRenderer.legacy;
+      default:
+        throw AndroidMapRendererException(
+            'Failed to initialize latest or legacy renderer, got $initializedRenderer.');
+    }
+  }
 
   Widget _buildView(
     int creationId,
@@ -682,6 +754,7 @@ Map<String, Object> _jsonForMapConfiguration(MapConfiguration config) {
     if (config.trafficEnabled != null) 'trafficEnabled': config.trafficEnabled!,
     if (config.buildingsEnabled != null)
       'buildingsEnabled': config.buildingsEnabled!,
+    if (config.cloudMapId != null) 'cloudMapId': config.cloudMapId!,
   };
 }
 
@@ -690,8 +763,8 @@ Map<String, Object> _jsonForMapConfiguration(MapConfiguration config) {
 // interface, and remove this copy.
 class _TileOverlayUpdates extends MapsObjectUpdates<TileOverlay> {
   /// Computes [TileOverlayUpdates] given previous and current [TileOverlay]s.
-  _TileOverlayUpdates.from(Set<TileOverlay> previous, Set<TileOverlay> current)
-      : super.from(previous, current, objectName: 'tileOverlay');
+  _TileOverlayUpdates.from(super.previous, super.current)
+      : super.from(objectName: 'tileOverlay');
 
   /// Set of TileOverlays to be added in this update.
   Set<TileOverlay> get tileOverlaysToAdd => objectsToAdd;
@@ -702,4 +775,17 @@ class _TileOverlayUpdates extends MapsObjectUpdates<TileOverlay> {
 
   /// Set of TileOverlays to be changed in this update.
   Set<TileOverlay> get tileOverlaysToChange => objectsToChange;
+}
+
+/// Thrown to indicate that a platform interaction failed to initialize renderer.
+class AndroidMapRendererException implements Exception {
+  /// Creates a [AndroidMapRendererException] with an optional human-readable
+  /// error message.
+  AndroidMapRendererException([this.message]);
+
+  /// A human-readable error message, possibly null.
+  final String? message;
+
+  @override
+  String toString() => 'AndroidMapRendererException($message)';
 }
