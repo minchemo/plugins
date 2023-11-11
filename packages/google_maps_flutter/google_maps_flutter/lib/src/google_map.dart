@@ -121,6 +121,7 @@ class GoogleMap extends StatefulWidget {
     this.circles = const <Circle>{},
     this.onCameraMoveStarted,
     this.tileOverlays = const <TileOverlay>{},
+    this.onPoiClick,
     this.onCameraMove,
     this.onCameraIdle,
     this.onTap,
