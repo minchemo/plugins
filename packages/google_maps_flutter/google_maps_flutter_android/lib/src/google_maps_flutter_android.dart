@@ -274,11 +274,6 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
           LatLng.fromJson(arguments['position'])!,
         ));
         break;
-      case 'tileOverlay#getTile':
-        final Map<String, Object?> arguments = _getArgumentDictionary(call);
-        final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
-            _tileOverlays[mapId];
-        final String tileOverlayId = arguments['tileOverlayId']! as String;
       case 'map#onPoiClick':
         _mapEventStreamController.add(MapPoiClickEvent(
           PointOfInterest(
@@ -288,6 +283,11 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
             call.arguments['placeId'],),
         ));
         break;
+      case 'tileOverlay#getTile':
+        final Map<String, Object?> arguments = _getArgumentDictionary(call);
+        final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
+            _tileOverlays[mapId];
+        final String tileOverlayId = arguments['tileOverlayId']! as String;
         final TileOverlay? tileOverlay =
             tileOverlaysForThisMap?[TileOverlayId(tileOverlayId)];
         final TileProvider? tileProvider = tileOverlay?.tileProvider;

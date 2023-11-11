@@ -255,21 +255,21 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
           mapId,
           LatLng.fromJson(arguments['position'])!,
         ));
+        break;      
+      case 'map#onPoiClick':
+        _mapEventStreamController.add(MapPoiClickEvent(
+          mapId,
+          PointOfInterest(
+            LatLng.fromJson(call.arguments['position'])!,
+            call.arguments['name'],
+            call.arguments['placeId'],),
+        ));
         break;
       case 'tileOverlay#getTile':
         final Map<String, Object?> arguments = _getArgumentDictionary(call);
         final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
             _tileOverlays[mapId];
         final String tileOverlayId = arguments['tileOverlayId']! as String;
-        break;
-        ));
-            call.arguments['placeId'],),
-            call.arguments['name'],
-            LatLng.fromJson(call.arguments['position'])!,
-          PointOfInterest(
-          mapId,
-        _mapEventStreamController.add(MapPoiClickEvent(
-      case 'map#onPoiClick':
         final TileOverlay? tileOverlay =
             tileOverlaysForThisMap?[TileOverlayId(tileOverlayId)];
         final TileProvider? tileProvider = tileOverlay?.tileProvider;
