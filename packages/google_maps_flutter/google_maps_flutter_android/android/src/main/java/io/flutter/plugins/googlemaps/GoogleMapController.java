@@ -612,6 +612,7 @@ final class GoogleMapController
     googleMap.setOnCircleClickListener(listener);
     googleMap.setOnMapClickListener(listener);
     googleMap.setOnMapLongClickListener(listener);
+    googleMap.setOnPoiClickListener(listener);
   }
 
   // @Override
@@ -626,7 +627,6 @@ final class GoogleMapController
   // does. This will override it when available even with the annotation commented out.
   public void onInputConnectionUnlocked() {
     // TODO(mklim): Remove this empty override once https://github.com/flutter/flutter/issues/40126 is fixed in stable.
-    googleMap.setOnPoiClickListener(listener);
   }
 
   // DefaultLifecycleObserver
