@@ -276,8 +276,8 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
         break;
       case 'map#onPoiClick':
         _mapEventStreamController.add(MapPoiClickEvent(
-          PointOfInterest(
           mapId,
+          PointOfInterest(
             LatLng.fromJson(call.arguments['position'])!,
             call.arguments['name'],
             call.arguments['placeId'],),

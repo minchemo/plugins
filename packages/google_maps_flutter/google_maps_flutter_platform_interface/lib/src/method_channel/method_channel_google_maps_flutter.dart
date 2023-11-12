@@ -264,15 +264,6 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
         final Map<TileOverlayId, TileOverlay>? tileOverlaysForThisMap =
             _tileOverlays[mapId];
         final String tileOverlayId = arguments['tileOverlayId']! as String;
-      case 'map#onPoiClick':
-        _mapEventStreamController.add(MapPoiClickEvent(
-          mapId,
-            LatLng.fromJson(call.arguments['position'])!,
-          PointOfInterest(
-            call.arguments['name'],
-            call.arguments['placeId'],),
-        ));
-        break;
         final TileOverlay? tileOverlay =
             tileOverlaysForThisMap?[TileOverlayId(tileOverlayId)];
         final TileProvider? tileProvider = tileOverlay?.tileProvider;
@@ -285,6 +276,15 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
           arguments['zoom'] as int?,
         );
         return tile.toJson();
+      case 'map#onPoiClick':
+        _mapEventStreamController.add(MapPoiClickEvent(
+          mapId,
+          PointOfInterest(
+            LatLng.fromJson(call.arguments['position'])!,
+            call.arguments['name'],
+            call.arguments['placeId'],),
+        ));
+        break;
       default:
         throw MissingPluginException();
     }
